@@ -1,0 +1,1 @@
+{"appearance":{"icon":{"src":"../icon-mono.png","type":"monochrome"},"icon_background":{"colors":["#60A5FA","#1E3A8A","#0B1F4D","#090C12"],"inner_glow_color":"#BFDBFE","stops":[0.0,0.33,0.66,1.0]},"theme_color":"#60A5FA"},"description":"Convert length, weight, temperature and volume in a glance.","name":"Unit Converter","version":1}
