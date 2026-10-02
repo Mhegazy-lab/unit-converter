@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<meta name="application-name" content="Unit Converter">
+<meta name="description" content="Convert length, weight, temperature and volume in a glance.">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<title>Unit Converter</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden}
+body{background:#090C12;color:#F3F4F6;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+display:flex;align-items:center;justify-content:center;min-height:100dvh;
+-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
+.app{width:min(480px,100vw - 24px);height:100dvh;max-height:780px;display:flex;flex-direction:column;
+padding:16px 14px 12px;gap:12px}
+header{text-align:center}
+header h1{font-size:22px;font-weight:700;letter-spacing:.5px;color:#60A5FA}
+.tabs{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+button{min-height:48px;border:none;border-radius:12px;font-size:17px;font-weight:700;cursor:pointer;
+font-family:inherit;color:#0B1B33;background:#60A5FA}
+button:active{transform:scale(.97)}
+button.tab{background:#141B28;color:#93C5FD}
+button.tab.active{background:#60A5FA;color:#0B1B33}
+button.unit{background:#141B28;color:#F3F4F6;font-size:19px}
+button.swap{background:#1E3A5F;color:#93C5FD;width:64px;flex:none;font-size:24px}
+button:disabled{background:#374151;color:#9CA3AF;cursor:default;transform:none}
+[data-focusable]:focus{outline:none}
+[data-focusable]:focus-visible{outline:3px solid #60A5FA;outline-offset:2px}
+input{-webkit-user-select:text;user-select:text}
+.num{width:100%;min-height:64px;background:#0D1117;border:1px solid #233046;border-radius:12px;
+color:#F3F4F6;font-size:34px;font-weight:700;text-align:center;outline:none}
+.num:focus{border-color:#60A5FA}
+label.lbl{font-size:13px;color:#9CA3AF;text-transform:uppercase;letter-spacing:1px}
+.unitrow{display:flex;align-items:stretch;gap:8px}
+.unitrow .unit{flex:1}
+.result{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;
+background:#0C121B;border:1px solid #60A5FA55;border-radius:16px;padding:8px}
+.result .out{font-size:56px;font-weight:800;color:#60A5FA;line-height:1;word-break:break-all;text-align:center}
+.result .expr{font-size:16px;color:#D1D5DB;text-align:center}
+.result .cap{font-size:12px;color:#9CA3AF;text-transform:uppercase;letter-spacing:1px}
+</style>
+</head>
+<body>
+<div class="app">
+  <header><h1>Unit Converter</h1></header>
+
+  <div class="tabs" role="tablist">
+    <button class="tab active" id="tab-length" data-focusable>Length</button>
+    <button class="tab" id="tab-weight" data-focusable>Weight</button>
+    <button class="tab" id="tab-temp" data-focusable>Temp</button>
+    <button class="tab" id="tab-volume" data-focusable>Volume</button>
+  </div>
+
+  <div>
+    <label class="lbl" for="num">Value</label>
+    <input class="num" id="num" type="number" inputmode="decimal" step="any"
+           placeholder="0" value="10" data-focusable>
+  </div>
+
+  <div>
+    <label class="lbl">From / To</label>
+    <div class="unitrow">
+      <button class="unit" id="fromBtn" data-focusable>km</button>
+      <button class="swap" id="swapBtn" data-focusable aria-label="Swap units">⇄</button>
+      <button class="unit" id="toBtn" data-focusable>mi</button>
+    </div>
+  </div>
+
+  <div class="result">
+    <div class="cap">Result</div>
+    <div class="out" id="outVal">—</div>
+    <div class="expr" id="expr"></div>
+  </div>
+</div>
+<script>
+(function(){
+"use strict";
+/* factors relative to base unit: meters, kilograms, liters */
+var CATS={
+  length:{label:"Length",units:["km","mi","m","ft"],factor:{km:1000,mi:1609.344,m:1,ft:0.3048}},
+  weight:{label:"Weight",units:["kg","lb"],factor:{kg:1,lb:0.45359237}},
+  temp:{label:"Temp",units:["°C","°F"],temp:true},
+  volume:{label:"Volume",units:["L","gal"],factor:{L:1,gal:3.785411784}}
+};
+var cat="length", val=10, fromIdx=0, toIdx=1;
+
+var numEl=document.getElementById("num");
+var fromBtn=document.getElementById("fromBtn");
+var toBtn=document.getElementById("toBtn");
+var outVal=document.getElementById("outVal");
+var expr=document.getElementById("expr");
+
+function convert(c,v,from,to){
+  if(from===to){return v;}
+  if(c==="temp"){
+    if(from==="°C"&&to==="°F"){return v*9/5+32;}
+    if(from==="°F"&&to==="°C"){return (v-32)*5/9;}
+    return v;
+  }
+  var f=CATS[c].factor;
+  return v*f[from]/f[to];
+}
+function fmtNum(n){
+  if(!isFinite(n)){return "—";}
+  var s=Number(n.toFixed(4)).toString();
+  return s;
+}
+
+function render(){
+  var units=CATS[cat].units;
+  var from=units[fromIdx], to=units[toIdx];
+  fromBtn.textContent=from;
+  toBtn.textContent=to;
+  var tabs=["length","weight","temp","volume"];
+  tabs.forEach(function(t){
+    document.getElementById("tab-"+t).classList.toggle("active",t===cat);
+  });
+  var r=convert(cat,val,from,to);
+  outVal.textContent=fmtNum(r);
+  expr.textContent=fmtNum(val)+" "+from+" = "+fmtNum(r)+" "+to;
+}
+
+function setCat(c){
+  cat=c;
+  fromIdx=0;
+  toIdx=CATS[c].units.length>1?1:0;
+  render();
+}
+
+numEl.addEventListener("input",function(){
+  var v=parseFloat(numEl.value);
+  val=isNaN(v)?0:v;
+  render();
+});
+document.getElementById("tab-length").addEventListener("click",function(){setCat("length");});
+document.getElementById("tab-weight").addEventListener("click",function(){setCat("weight");});
+document.getElementById("tab-temp").addEventListener("click",function(){setCat("temp");});
+document.getElementById("tab-volume").addEventListener("click",function(){setCat("volume");});
+fromBtn.addEventListener("click",function(){
+  fromIdx=(fromIdx+1)%CATS[cat].units.length; render();
+});
+toBtn.addEventListener("click",function(){
+  toIdx=(toIdx+1)%CATS[cat].units.length; render();
+});
+document.getElementById("swapBtn").addEventListener("click",function(){
+  var t=fromIdx; fromIdx=toIdx; toIdx=t; render();
+});
+
+/* D-pad: arrows move between controls, Enter activates */
+function focusables(){
+  return Array.prototype.slice.call(document.querySelectorAll("[data-focusable]"))
+    .filter(function(el){return !el.disabled && el.offsetParent!==null;});
+}
+document.addEventListener("keydown",function(e){
+  var active=document.activeElement;
+  var inField=active && (active.tagName==="INPUT"||active.tagName==="TEXTAREA");
+  if(e.key==="Enter"){
+    if(inField){return;}
+    e.preventDefault();
+    if(active&&active.getAttribute("data-focusable")!==null){active.click();}
+    return;
+  }
+  var fwd=(e.key==="ArrowRight"||e.key==="ArrowDown");
+  var back=(e.key==="ArrowLeft"||e.key==="ArrowUp");
+  if(!fwd&&!back){return;}
+  if(inField&&(e.key==="ArrowLeft"||e.key==="ArrowRight")){return;}
+  e.preventDefault();
+  var items=focusables();
+  if(!items.length){return;}
+  var i=items.indexOf(active);
+  if(i===-1){items[0].focus();return;}
+  i=(i+(fwd?1:-1)+items.length)%items.length;
+  items[i].focus();
+});
+
+render();
+var first=focusables()[0];
+if(first){first.focus();}
+})();
+</script>
+</body>
+</html>
